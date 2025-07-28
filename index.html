@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Grafik Arus</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 10px; }
+    canvas { max-width: 100%; height: 300px; }
+  </style>
+</head>
+<body>
+  <h2>Grafik Arus</h2>
+  <canvas id="chart"></canvas>
+
+  <script>
+    // GANTI dengan konfigurasi Firebase milikmu
+    const firebaseConfig = {
+      apiKey: "AIzaSyAZYwVcQiO2rksIHgs-p3LNHpnSFv-FqHI",
+      authDomain: "bismillah-6c21b.firebaseapp.com",
+      databaseURL: "https://bismillah-6c21b-default-rtdb.firebaseio.com",
+      projectId: "bismillah-6c21b",
+      storageBucket: "bismillah-6c21b.firebasestorage.app",
+      messagingSenderId: "527275922878",
+      appId: "1:527275922878:web:b4bd649db495063ca495ef"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const ctx = document.getElementById('chart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Arus (A)',
+          borderColor: 'blue',
+          data: [],
+          fill: false,
+          tension: 0.2
+        }]
+      },
+      options: {
+        scales: {
+          x: { display: true, title: { display: true, text: 'Waktu' } },
+          y: { beginAtZero: true }
+        }
+      }
+    });
+
+    db.ref("sensor/status").on("value", snap => {
+      const status = snap.val();
+      if (status === 0 || status === "0") {
+        chart.data.labels = [];
+        chart.data.datasets[0].data = [];
+        chart.update();
+      }
+    });
+
+    const today = new Date().toISOString().slice(0, 10);
+    db.ref("log/" + today).on("child_added", snap => {
+      const waktu = snap.key;
+      const data = snap.val();
+      if (data.arus !== undefined) {
+        chart.data.labels.push(waktu);
+        chart.data.datasets[0].data.push(data.arus);
+        chart.update();
+      }
+    });
+  </script>
+</body>
+</html>
