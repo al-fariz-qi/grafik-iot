@@ -1,21 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Log Data Grafik</title>
-  <!-- Ganti ke versi compat -->
+  <meta charset="UTF-8">
+  <title>Grafik Pengisian Baterai</title>
+  <!-- Tetap pakai compat agar tidak error -->
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     canvas {
-      max-width: 100%;
-      height: 400px !important;
+      max-width: 90vw;
+      max-height: 70vh;
+    }
+    body {
+      font-family: Arial;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <h3>Grafik Tegangan & Arus</h3>
-  <canvas id="myChart" width="400" height="200"></canvas>
+  <h2>18 Ah</h2>
+  <canvas id="grafik"></canvas>
 
   <script>
     // Konfigurasi Firebase
@@ -33,8 +38,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Inisialisasi Chart.js
-    const ctx = document.getElementById('myChart').getContext('2d');
+    const ctx = document.getElementById('grafik').getContext('2d');
     const chart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -44,12 +48,16 @@
             label: 'Tegangan (V)',
             borderColor: 'blue',
             data: [],
+            yAxisID: 'y-tegangan',
+            tension: 0.3,
             fill: false
           },
           {
-            label: 'Arus (A)',
-            borderColor: 'green',
+            label: 'Arus (I)',
+            borderColor: 'orange',
             data: [],
+            yAxisID: 'y-arus',
+            tension: 0.3,
             fill: false
           }
         ]
@@ -57,7 +65,36 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: false
+        scales: {
+          'y-tegangan': {
+            type: 'linear',
+            position: 'left',
+            title: {
+              display: true,
+              text: 'Tegangan (V)'
+            },
+            min: 13,
+            max: 14.5
+          },
+          'y-arus': {
+            type: 'linear',
+            position: 'right',
+            title: {
+              display: true,
+              text: 'Arus (I)'
+            },
+            min: 0,
+            max: 2,
+            grid: {
+              drawOnChartArea: false
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'bottom'
+          }
+        }
       }
     });
 
@@ -86,9 +123,11 @@
           sortedKeys.forEach(key => {
             const logItem = data[key];
             if (logItem && logItem.VIN !== undefined && logItem.I !== undefined) {
-              labels.push(key);
-              tegangan.push(logItem.VIN);
-              arus.push(logItem.I);
+              // Misal kamu ingin menampilkan waktu dalam format HH:MM
+              const jam = logItem.jam || key; // jika kamu simpan waktu sebagai jam
+              labels.push(jam);
+              tegangan.push(parseFloat(logItem.VIN));
+              arus.push(parseFloat(logItem.I));
             }
           });
 
@@ -100,9 +139,8 @@
       });
     }
 
-    // Ambil data setiap 1 menit
     updateChart();
-    setInterval(updateChart, 1 * 60 * 1000); // 1 menit
+    setInterval(updateChart, 1 * 60 * 1000); // Update tiap 1 menit
   </script>
 </body>
 </html>
