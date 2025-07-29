@@ -2,8 +2,9 @@
 <html>
 <head>
   <title>Log Data Grafik</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js"></script>
+  <!-- Ganti ke versi compat -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     canvas {
@@ -60,14 +61,11 @@
       }
     });
 
-    let lastStatus = null;
-
     function updateChart() {
       db.ref('/sensor/status').get().then(statusSnap => {
         const status = statusSnap.val();
 
         if (status === 0 || status === "0") {
-          // Reset grafik jika status "0"
           chart.data.labels = [];
           chart.data.datasets[0].data = [];
           chart.data.datasets[1].data = [];
@@ -76,12 +74,10 @@
           return;
         }
 
-        // Ambil semua log data
         db.ref('/log').once('value', (snapshot) => {
           const data = snapshot.val();
           if (!data) return;
 
-          // Urutkan berdasarkan key numerik (1, 2, 3, ...)
           const sortedKeys = Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b));
           const labels = [];
           const tegangan = [];
@@ -90,7 +86,7 @@
           sortedKeys.forEach(key => {
             const logItem = data[key];
             if (logItem && logItem.VIN !== undefined && logItem.I !== undefined) {
-              labels.push(key);  // Atau bisa pakai waktu, misal `new Date().toLocaleTimeString()`
+              labels.push(key);
               tegangan.push(logItem.VIN);
               arus.push(logItem.I);
             }
