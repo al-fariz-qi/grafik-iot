@@ -16,12 +16,12 @@
       max-width: 90vw;
       max-height: 70vh;
     }
-    .zoom-buttons {
+    .controls {
       margin: 10px;
     }
-    .zoom-buttons button {
+    .controls button {
       font-size: 18px;
-      margin: 0 5px;
+      margin: 5px;
       padding: 6px 12px;
     }
   </style>
@@ -30,10 +30,18 @@
   <h2>Pengecasan Baterai</h2>
 
   <!-- Tombol Zoom -->
-  <div class="zoom-buttons">
+  <div class="controls">
     <button onclick="zoomOut()">−</button>
     <button onclick="resetZoom()">Reset Zoom</button>
     <button onclick="zoomIn()">+</button>
+  </div>
+
+  <!-- Tombol Geser -->
+  <div class="controls">
+    <button onclick="panLeft()">⬅️</button>
+    <button onclick="panRight()">➡️</button>
+    <button onclick="panUp()">⬆️</button>
+    <button onclick="panDown()">⬇️</button>
   </div>
 
   <canvas id="grafik"></canvas>
@@ -111,20 +119,14 @@
           zoom: {
             pan: {
               enabled: true,
-              mode: 'x',
-              modifierKey: null // tidak perlu tahan tombol apa pun untuk drag
+              mode: 'xy',
+              modifierKey: null
             },
             zoom: {
-              wheel: {
-                enabled: true
-              },
-              pinch: {
-                enabled: true
-              },
+              wheel: { enabled: true },
+              pinch: { enabled: true },
               mode: 'x',
-              drag: {
-                enabled: false
-              }
+              drag: { enabled: false }
             }
           }
         }
@@ -171,19 +173,36 @@
     }
 
     updateChart();
-    setInterval(updateChart, 1 * 60 * 1000); // setiap 1 menit
+    setInterval(updateChart, 60 * 1000); // 1 menit
 
-    // Fungsi zoom manual
+    // Zoom controls
     function zoomIn() {
-      chart.zoom(1.2); // Zoom 20%
+      chart.zoom(1.2);
     }
 
     function zoomOut() {
-      chart.zoom(0.8); // Zoom out 20%
+      chart.zoom(0.8);
     }
 
     function resetZoom() {
       chart.resetZoom();
+    }
+
+    // Pan (geser) controls
+    function panLeft() {
+      chart.pan({ x: -100, y: 0 });
+    }
+
+    function panRight() {
+      chart.pan({ x: 100, y: 0 });
+    }
+
+    function panUp() {
+      chart.pan({ x: 0, y: -50 });
+    }
+
+    function panDown() {
+      chart.pan({ x: 0, y: 50 });
     }
   </script>
 </body>
