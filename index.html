@@ -3,29 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <title>Grafik Pengisian Baterai</title>
-  <!-- Tetap pakai compat agar tidak error -->
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.0"></script> <!-- Tambahkan plugin zoom -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.0"></script>
   <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+    }
     canvas {
       max-width: 90vw;
       max-height: 70vh;
     }
-    body {
-      font-family: Arial;
-      text-align: center;
+    .zoom-buttons {
+      margin: 10px;
+    }
+    .zoom-buttons button {
+      font-size: 18px;
+      margin: 0 5px;
+      padding: 6px 12px;
     }
   </style>
 </head>
 <body>
   <h2>Pengecasan Baterai</h2>
+
+  <!-- Tombol Zoom -->
+  <div class="zoom-buttons">
+    <button onclick="zoomOut()">−</button>
+    <button onclick="resetZoom()">Reset Zoom</button>
+    <button onclick="zoomIn()">+</button>
+  </div>
+
   <canvas id="grafik"></canvas>
-  <button onclick="chart.resetZoom()">Reset Zoom</button> <!-- Tombol reset zoom -->
 
   <script>
-    // Konfigurasi Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyAZYwVcQiO2rksIHgs-p3LNHpnSFv-FqHI",
       authDomain: "bismillah-6c21b.firebaseapp.com",
@@ -96,14 +109,22 @@
             position: 'bottom'
           },
           zoom: {
-            zoom: {
-              wheel: { enabled: true },
-              pinch: { enabled: true },
-              mode: 'x',
-            },
             pan: {
               enabled: true,
               mode: 'x',
+              modifierKey: null // tidak perlu tahan tombol apa pun untuk drag
+            },
+            zoom: {
+              wheel: {
+                enabled: true
+              },
+              pinch: {
+                enabled: true
+              },
+              mode: 'x',
+              drag: {
+                enabled: false
+              }
             }
           }
         }
@@ -113,7 +134,6 @@
     function updateChart() {
       db.ref('/sensor/status').get().then(statusSnap => {
         const status = statusSnap.val();
-
         if (status === 0 || status === "0") {
           chart.data.labels = [];
           chart.data.datasets[0].data = [];
@@ -135,7 +155,7 @@
           sortedKeys.forEach(key => {
             const logItem = data[key];
             if (logItem && logItem.VIN !== undefined && logItem.I !== undefined) {
-              const jam = logItem.jam || key; // bisa diubah ke format waktu nanti
+              const jam = logItem.jam || key;
               labels.push(jam);
               tegangan.push(parseFloat(logItem.VIN));
               arus.push(parseFloat(logItem.I));
@@ -152,6 +172,19 @@
 
     updateChart();
     setInterval(updateChart, 1 * 60 * 1000); // setiap 1 menit
+
+    // Fungsi zoom manual
+    function zoomIn() {
+      chart.zoom(1.2); // Zoom 20%
+    }
+
+    function zoomOut() {
+      chart.zoom(0.8); // Zoom out 20%
+    }
+
+    function resetZoom() {
+      chart.resetZoom();
+    }
   </script>
 </body>
 </html>
