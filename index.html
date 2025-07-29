@@ -7,6 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.0"></script> <!-- Tambahkan plugin zoom -->
   <style>
     canvas {
       max-width: 90vw;
@@ -19,8 +20,9 @@
   </style>
 </head>
 <body>
-  <h2>18 Ah</h2>
+  <h2>Pengecasan Baterai</h2>
   <canvas id="grafik"></canvas>
+  <button onclick="chart.resetZoom()">Reset Zoom</button> <!-- Tombol reset zoom -->
 
   <script>
     // Konfigurasi Firebase
@@ -34,7 +36,6 @@
       appId: "1:527275922878:web:b4bd649db495063ca495ef"
     };
 
-    // Inisialisasi Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -93,6 +94,17 @@
         plugins: {
           legend: {
             position: 'bottom'
+          },
+          zoom: {
+            zoom: {
+              wheel: { enabled: true },
+              pinch: { enabled: true },
+              mode: 'x',
+            },
+            pan: {
+              enabled: true,
+              mode: 'x',
+            }
           }
         }
       }
@@ -123,8 +135,7 @@
           sortedKeys.forEach(key => {
             const logItem = data[key];
             if (logItem && logItem.VIN !== undefined && logItem.I !== undefined) {
-              // Misal kamu ingin menampilkan waktu dalam format HH:MM
-              const jam = logItem.jam || key; // jika kamu simpan waktu sebagai jam
+              const jam = logItem.jam || key; // bisa diubah ke format waktu nanti
               labels.push(jam);
               tegangan.push(parseFloat(logItem.VIN));
               arus.push(parseFloat(logItem.I));
@@ -140,7 +151,7 @@
     }
 
     updateChart();
-    setInterval(updateChart, 1 * 60 * 1000); // Update tiap 1 menit
+    setInterval(updateChart, 1 * 60 * 1000); // setiap 1 menit
   </script>
 </body>
 </html>
