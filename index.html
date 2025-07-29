@@ -1,122 +1,106 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Grafik IoT dari Firebase</title>
+  <title>Log Data Grafik</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <h2>Grafik Tegangan dan Arus</h2>
-  <canvas id="grafik" width="100%" height="50%"></canvas>
+  <h3>Grafik Tegangan & Arus</h3>
+  <canvas id="myChart" width="400" height="200"></canvas>
 
   <script>
-    let chart; // variabel global untuk update data
+    // Konfigurasi Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAZYwVcQiO2rksIHgs-p3LNHpnSFv-FqHI",
+      authDomain: "bismillah-6c21b.firebaseapp.com",
+      databaseURL: "https://bismillah-6c21b-default-rtdb.firebaseio.com",
+      projectId: "bismillah-6c21b",
+      storageBucket: "bismillah-6c21b.firebasestorage.app",
+      messagingSenderId: "527275922878",
+      appId: "1:527275922878:web:b4bd649db495063ca495ef"
+    };
 
-    async function ambilDataFirebase() {
-      try {
-        const response = await fetch("https://bismillah-6c21b-default-rtdb.firebaseio.com/log.json");
-        const data = await response.json();
+    // Inisialisasi Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-        const waktu = [];
-        const tegangan = [];
-        const arus = [];
-
-        let dataReset = false;
-
-        for (const key in data) {
-          const log = data[key];
-
-          // Konversi status jadi string agar konsisten
-          const status = String(log.status);
-
-          if (status === "0") {
-            dataReset = true; // tandai untuk reset
-            continue;
+    // Inisialisasi Chart.js
+    const ctx = document.getElementById('myChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: 'Tegangan (V)',
+            borderColor: 'blue',
+            data: [],
+            fill: false
+          },
+          {
+            label: 'Arus (A)',
+            borderColor: 'green',
+            data: [],
+            fill: false
           }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false
+      }
+    });
 
-          if (["1", "2", "3"].includes(status)) {
-            waktu.push(key);
-            tegangan.push(log.tegangan || log.VIN || 0);
-            arus.push(log.arus || log.I || 0);
-          }
+    let lastStatus = null;
+
+    function updateChart() {
+      db.ref('/sensor/status').get().then(statusSnap => {
+        const status = statusSnap.val();
+
+        if (status === "0") {
+          // Reset grafik jika status "0"
+          chart.data.labels = [];
+          chart.data.datasets[0].data = [];
+          chart.data.datasets[1].data = [];
+          chart.update();
+          console.log("Grafik direset (status = 0)");
+          return;
         }
 
-        // Jika status terakhir adalah reset, maka kosongkan grafik
-        if (dataReset) {
-          if (chart) {
-            chart.data.labels = [];
-            chart.data.datasets[0].data = [];
-            chart.data.datasets[1].data = [];
-            chart.update();
-          }
-          console.log("Grafik telah direset karena status == 0");
-          return; // keluar agar tidak lanjut update
-        }
+        // Ambil semua log data
+        db.ref('/log').once('value', (snapshot) => {
+          const data = snapshot.val();
+          if (!data) return;
 
-        // Jika chart belum dibuat, buat baru
-        if (!chart) {
-          const ctx = document.getElementById('grafik').getContext('2d');
-          chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: waktu,
-              datasets: [
-                {
-                  label: 'Tegangan (V)',
-                  data: tegangan,
-                  yAxisID: 'y-tegangan',
-                  borderColor: 'blue',
-                  fill: false
-                },
-                {
-                  label: 'Arus (A)',
-                  data: arus,
-                  yAxisID: 'y-arus',
-                  borderColor: 'orange',
-                  fill: false
-                }
-              ]
-            },
-            options: {
-              responsive: true,
-              animation: false,
-              scales: {
-                y: {
-                  id: 'y-tegangan',
-                  type: 'linear',
-                  position: 'left',
-                  title: { display: true, text: 'Tegangan (V)' }
-                },
-                y1: {
-                  id: 'y-arus',
-                  type: 'linear',
-                  position: 'right',
-                  title: { display: true, text: 'Arus (A)' },
-                  grid: { drawOnChartArea: false }
-                },
-                x: {
-                  title: { display: true, text: 'Waktu' }
-                }
-              }
+          // Urutkan berdasarkan key numerik (1, 2, 3, ...)
+          const sortedKeys = Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b));
+          const labels = [];
+          const tegangan = [];
+          const arus = [];
+
+          sortedKeys.forEach(key => {
+            const logItem = data[key];
+            if (logItem && logItem.VIN !== undefined && logItem.I !== undefined) {
+              labels.push(key);  // Atau bisa pakai waktu, misal `new Date().toLocaleTimeString()`
+              tegangan.push(logItem.VIN);
+              arus.push(logItem.I);
             }
           });
-        } else {
-          // Update data jika chart sudah ada
-          chart.data.labels = waktu;
+
+          chart.data.labels = labels;
           chart.data.datasets[0].data = tegangan;
           chart.data.datasets[1].data = arus;
           chart.update();
-        }
-
-      } catch (error) {
-        console.error("Gagal mengambil data dari Firebase:", error);
-      }
+        });
+      });
     }
 
-    // Pertama ambil saat halaman dibuka
-    ambilDataFirebase();
-
-    // Ambil data setiap 1 menit (60000 ms)
-    setInterval(ambilDataFirebase, 60000);
+    // Ambil data setiap 5 menit
+    updateChart();
+    setInterval(updateChart, 5 * 60 * 1000); // 5 menit
   </script>
 </body>
 </html>
