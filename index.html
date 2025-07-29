@@ -133,6 +133,12 @@
       }
     });
 
+    let kondisiCounter = 0;
+    const maxCounter = 2;
+    const VIN_TARGET = 14.10;
+    const I_TARGET = 0.30;
+    const BACKUP_TRIGGER_URL = "https://script.google.com/macros/s/AKfycbzzB-6BJPWbaMflj4UbSnVlkz5P5WdelP1FhdP20fab9F13W0b2d6UfKbKE22jOEsqYnA/exec" ; // ← ganti dengan URL Apps Script kamu
+
     function updateChart() {
       db.ref('/sensor/status').get().then(statusSnap => {
         const status = statusSnap.val();
@@ -144,16 +150,16 @@
           console.log("Grafik direset (status = 0)");
           return;
         }
-
+    
         db.ref('/log').once('value', (snapshot) => {
           const data = snapshot.val();
           if (!data) return;
-
+    
           const sortedKeys = Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b));
           const labels = [];
           const tegangan = [];
           const arus = [];
-
+    
           sortedKeys.forEach(key => {
             const logItem = data[key];
             if (logItem && logItem.VIN !== undefined && logItem.I !== undefined) {
@@ -163,11 +169,50 @@
               arus.push(parseFloat(logItem.I));
             }
           });
-
+    
           chart.data.labels = labels;
           chart.data.datasets[0].data = tegangan;
           chart.data.datasets[1].data = arus;
           chart.update();
+    
+          // Tambahan: deteksi kondisi backup otomatis
+          const lastKey = sortedKeys[sortedKeys.length - 1];
+          const lastLog = data[lastKey];
+    
+          if (lastLog && lastLog.VIN !== undefined && lastLog.I !== undefined) {
+            const vin = parseFloat(lastLog.VIN);
+            const i = parseFloat(lastLog.I);
+    
+            if (vin.toFixed(2) === VIN_TARGET.toFixed(2) && i.toFixed(2) === I_TARGET.toFixed(2)) {
+              kondisiCounter++;
+              console.log(`Kondisi cocok ${kondisiCounter}/${maxCounter}`);
+            } else {
+              kondisiCounter = 0;
+            }
+    
+            if (kondisiCounter >= maxCounter) {
+              console.log("Memicu backup otomatis ke Apps Script...");
+            
+              // Trigger backup grafik ke Apps Script
+              fetch(BACKUP_TRIGGER_URL)
+                .then(res => res.text())
+                .then(text => console.log("Respon backup:", text))
+                .catch(err => console.error("Gagal trigger backup:", err));
+            
+              // Update Firebase: /pengaturan/reset = "1"
+              fetch("https://bismillah-6c21b-default-rtdb.firebaseio.com/pengaturan/reset.json", {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify("1")
+              })
+              .then(() => console.log("Reset Firebase berhasil"))
+              .catch(err => console.error("Gagal set /pengaturan/reset:", err));
+            
+              kondisiCounter = 0;
+            }
+          }
         });
       });
     }
