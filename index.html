@@ -190,19 +190,19 @@
 
     // Pan (geser) controls
     function panLeft() {
-      chart.pan({ x: -100, y: 0 });
-    }
-
-    function panRight() {
       chart.pan({ x: 100, y: 0 });
     }
 
+    function panRight() {
+      chart.pan({ x: -100, y: 0 });
+    }
+
     function panUp() {
-      chart.pan({ x: 0, y: -50 });
+      chart.pan({ x: 0, y: 50 });
     }
 
     function panDown() {
-      chart.pan({ x: 0, y: 50 });
+      chart.pan({ x: 0, y: -50 });
     }
   </script>
 </body>
